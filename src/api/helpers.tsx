@@ -3,7 +3,6 @@ import { ActionFunction } from "react-router-dom";
 import { Period } from "../components/Buttons/PeriodSelector";
 import { Asset } from "../components/Dashboard/Assets";
 import { Category } from "../components/Dashboard/Categories";
-import { Goal } from "../components/Dashboard/Goals";
 import { Transaction } from "../components/Dashboard/Transactions";
 
 export interface DataItem {
@@ -16,174 +15,162 @@ export const actionHandler: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
   const { _action, ...values } = Object.fromEntries(formData);
 
-  if (_action === "createAsset") {
-    try {
-      createAsset({
-        id: "",
-        name: values.name as string,
-        initBalance: values.initBalance as unknown as number,
-        currency: values.currency as string,
-      });
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Asset is not created!");
+  const handleResponse = async (response: Response) => {
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Request failed!");
     }
-  }
+    return response.json();
+  };
 
-  if (_action === "editAsset") {
-    try {
-      editAsset(values.asset_id as string, values as unknown as Asset);
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Transaction is not updated!");
+  const requestOptions = (method: string, body: any) => ({
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  try {
+    switch (_action) {
+      case "createAsset":
+        await handleResponse(
+          await fetch(
+            "http://localhost:8989/assets",
+            requestOptions("POST", {
+              id: "",
+              name: values.name,
+              initBalance: values.initBalance,
+              currency: values.currency,
+            })
+          )
+        );
+        return null;
+
+      case "editAsset":
+        await handleResponse(
+          await fetch(
+            `http://localhost:8989/assets/${values.asset_id}`,
+            requestOptions("PUT", values)
+          )
+        );
+        return null;
+
+      case "deleteAsset":
+        await handleResponse(
+          await fetch(`http://localhost:8989/assets/${values.asset_id}`, {
+            method: "DELETE",
+          })
+        );
+        return null;
+
+      case "createTransaction":
+        await handleResponse(
+          await fetch(
+            "http://localhost:8989/transactions",
+            requestOptions("POST", {
+              id: "",
+              name: values.name,
+              asset_id: values.asset_id,
+              category_id: values.category_id,
+              source: values.source,
+              asset_from_id: values.asset_from_id,
+              amount: values.amount,
+              currency: values.currency,
+              date: new Date(values.date),
+              createdAt: Date.now(),
+              type: values.type,
+            })
+          )
+        );
+        return null;
+
+      case "editTransaction":
+        await handleResponse(
+          await fetch(
+            `http://localhost:8989/transactions/${values.transaction_id}`,
+            requestOptions("PUT", values)
+          )
+        );
+        return null;
+
+      case "deleteTransaction":
+        await handleResponse(
+          await fetch(
+            `http://localhost:8989/transactions/${values.transaction_id}`,
+            { method: "DELETE" }
+          )
+        );
+        return null;
+
+      case "createCategory":
+        await handleResponse(
+          await fetch(
+            "http://localhost:8989/categories",
+            requestOptions("POST", {
+              id: "",
+              name: values.name,
+              totalBudgeted: values.totalBudgeted,
+              currency: values.currency,
+            })
+          )
+        );
+        return null;
+
+      case "editCategory":
+        await handleResponse(
+          await fetch(
+            `http://localhost:8989/categories/${values.category_id}`,
+            requestOptions("PUT", values)
+          )
+        );
+        return null;
+
+      case "deleteCategory":
+        await handleResponse(
+          await fetch(
+            `http://localhost:8989/categories/${values.category_id}`,
+            { method: "DELETE" }
+          )
+        );
+        return null;
+
+      // Uncomment and implement if you decide to include goals
+      // case "createGoal":
+      // ...
+      // case "editGoal":
+      // ...
+      // case "deleteGoal":
+      // ...
+
+      default:
+        throw new Error("Unknown action!");
     }
+  } catch (error) {
+    console.log(error);
+    throw new Error(error.message);
   }
-
-  if (_action === "deleteAsset") {
-    try {
-      deleteAsset(values.asset_id as string);
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Transaction is not deleted!");
-    }
-  }
-
-  if (_action === "createTransaction") {
-    try {
-      createTransaction({
-        id: "",
-        name: values.name as string,
-        asset_id: values.asset_id as string,
-        category_id: values.category_id as string,
-        source: values.source as string,
-        asset_from_id: values.asset_from_id as string,
-        amount: values.amount as unknown as number,
-        currency: values.currency as string,
-        date: new Date(values.date as string) as Date,
-        createdAt: Date.now() as unknown as Date,
-        type: values.type as string,
-      });
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Transaction is not created!");
-    }
-  }
-
-  if (_action === "editTransaction") {
-    try {
-      editTransaction(
-        values.transaction_id as string,
-        values as unknown as Transaction
-      );
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Transaction is not updated!");
-    }
-  }
-
-  if (_action === "deleteTransaction") {
-    try {
-      deleteTransaction(values.transaction_id as string);
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Transaction is not deleted!");
-    }
-  }
-
-  if (_action === "createCategory") {
-    try {
-      createCategory({
-        id: "",
-        name: values.name as string,
-        totalBudgeted: values.totalBudgeted as unknown as number,
-        currency: values.currency as string,
-      });
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Category is not created!");
-    }
-  }
-
-  if (_action === "editCategory") {
-    try {
-      editCategory(values.category_id as string, values as unknown as Category);
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Category is not updated!");
-    }
-  }
-
-  if (_action === "deleteCategory") {
-    try {
-      deleteCategory(values.category_id as string);
-      return null;
-    } catch (e) {
-      console.log(e);
-      throw new Error("Category is not deleted!");
-    }
-  }
-
-  // if (_action === "createGoal") {
-  //   try {
-  //     createGoal({
-  //       id: "",
-  //       name: values.name as string,
-  //       amount: values.amount as unknown as number,
-  //       currency: values.currency as string,
-  //     });
-  //     return null;
-  //   } catch (e) {
-  //     console.log(e);
-  //     throw new Error("Goal is not created!");
-  //   }
-  // }
-
-  // if (_action === "editGoal") {
-  //   console.log(values);
-  //   try {
-  //     editGoal(values.goal_id as string, values as unknown as Goal);
-  //     return null;
-  //   } catch (e) {
-  //     console.log(e);
-  //     throw new Error("Goal is not updated!");
-  //   }
-  // }
-
-  // if (_action === "deleteGoal") {
-  //   try {
-  //     deleteGoal(values.goal_id as string);
-  //     return null;
-  //   } catch (e) {
-  //     console.log(e);
-  //     throw new Error("Goal is not deleted!");
-  //   }
-  // }
 
   return null;
 };
 
-// Local storage
-export const fetchData = (key: string) => {
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : [];
+// Fetch data from the API
+export const fetchData = async (table: string) => {
+  const response = await fetch(`http://localhost:8989/${table}`);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Failed to fetch data!");
+  }
+
+  return response.json();
 };
 
-// Delete Data Item
-export const deleteItem = (table: string, key: string, value: string) => {
-  const data = fetchData(table) as DataItem[];
-  const newData = data.filter((d) => d[key] !== value);
-  return localStorage.setItem(table, JSON.stringify(newData));
-};
+/* -------------- Asset and Category -------------- */
 
-// Get matching items
+// Calculate Spent By Category
+
+// Get matching item
 export const getAllMatchingItems = (
   table: string,
   key: string,
@@ -191,180 +178,9 @@ export const getAllMatchingItems = (
 ) => {
   const data = fetchData(table);
   const filteredData = data.filter((d: DataItem) => d[key] === value);
-  return filteredData;
+  return filteredData[0];
 };
 
-// Asset
-export const createAsset = (values: Asset) => {
-  const newAsset = {
-    id: values.id === "" ? crypto.randomUUID() : values.id,
-    name: values.name,
-    initBalance: values.initBalance,
-    currency: values.currency,
-  };
-  const assets = fetchData("assets") ?? [];
-  return localStorage.setItem("assets", JSON.stringify([...assets, newAsset]));
-};
-
-export const editAsset = (asset_id: string, values: Asset) => {
-  const transactions = fetchData("transactions") as Transaction[];
-
-  deleteItem("assets", "id", asset_id as string);
-  createAsset({
-    id: asset_id as string,
-    name: values.name as string,
-    initBalance: values.initBalance as unknown as number,
-    currency: values.currency as string,
-  });
-
-  const newTransactions = transactions.map((transaction) => {
-    if (transaction.asset_id === asset_id)
-      transaction.currency = values.currency;
-    return transaction;
-  });
-
-  localStorage.setItem("transactions", JSON.stringify(newTransactions));
-};
-
-export const deleteAsset = (asset_id: string) => {
-  const transactions = fetchData("transactions") as Transaction[];
-  const filteredTransactions = transactions.filter(
-    (d) => d.asset_id !== asset_id && d.asset_from_id !== asset_id
-  );
-
-  localStorage.setItem("transactions", JSON.stringify(filteredTransactions));
-  return deleteItem("assets", "id", asset_id);
-};
-
-// Transaction
-export const createTransaction = (values: Transaction) => {
-  const newTransaction = {
-    id: values.id === "" ? crypto.randomUUID() : values.id,
-    name: values.name,
-    asset_id: values.asset_id,
-    category_id: values.category_id,
-    source: values.source,
-    asset_from_id: values.asset_from_id,
-    amount: values.amount,
-    currency:
-      values.currency ??
-      getAllMatchingItems("assets", "id", values.asset_id)[0].currency,
-    date: values.date,
-    createdAt: values.createdAt,
-    type: values.type,
-  };
-
-  const transactions = fetchData("transactions") ?? [];
-
-  return localStorage.setItem(
-    "transactions",
-    JSON.stringify([...transactions, newTransaction])
-  );
-};
-
-export const editTransaction = (
-  transaction_id: string,
-  values: Transaction
-) => {
-  deleteItem("transactions", "id", transaction_id as string);
-  createTransaction({
-    id: transaction_id as string,
-    name: values.name as string,
-    asset_id: values.asset_id as string,
-    category_id: values.category_id as string,
-    source: values.source as string,
-    asset_from_id: values.asset_from_id as string,
-    amount: values.amount as unknown as number,
-    currency: values.currency as string,
-    date: new Date(values.date) as Date,
-    createdAt: Date.now() as unknown as Date,
-    type: values.type as string,
-  });
-};
-
-export const deleteTransaction = (transaction_id: string) => {
-  return deleteItem("transactions", "id", transaction_id as string);
-};
-
-// Category
-export const createCategory = (values: Category) => {
-  const newCategory = {
-    id: values.id === "" ? crypto.randomUUID() : values.id,
-    name: values.name,
-    totalBudgeted: values.totalBudgeted,
-    currency: values.currency,
-  };
-
-  const categories = fetchData("categories") ?? [];
-
-  return localStorage.setItem(
-    "categories",
-    JSON.stringify([...categories, newCategory])
-  );
-};
-
-export const editCategory = (category_id: string, values: Category) => {
-  deleteItem("categories", "id", category_id as string);
-  createCategory({
-    id: category_id as string,
-    name: values.name as string,
-    totalBudgeted: values.totalBudgeted as unknown as number,
-    currency: values.currency as string,
-  });
-};
-
-export const deleteCategory = (category_id: string) => {
-  const transactions = fetchData("transactions") as Transaction[];
-  const filteredTransactions = transactions.filter(
-    (d) => d.category_id !== category_id
-  );
-
-  localStorage.setItem("transactions", JSON.stringify(filteredTransactions));
-  return deleteItem("categories", "id", category_id);
-};
-
-// Goal
-export const createGoal = (values: Goal) => {
-  const newGoal = {
-    id: values.id === "" ? crypto.randomUUID() : values.id,
-    name: values.name,
-    amount: values.amount,
-    currency: values.currency,
-  };
-
-  const goals = fetchData("goals") ?? [];
-
-  return localStorage.setItem("goals", JSON.stringify([...goals, newGoal]));
-};
-
-export const editGoal = (goal_id: string, values: Goal) => {
-  deleteItem("goals", "id", goal_id as string);
-  createGoal({
-    id: goal_id as string,
-    name: values.name as string,
-    amount: values.amount as unknown as number,
-    currency: values.currency as string,
-  });
-};
-
-export const deleteGoal = (goal_id: string) => {
-  const goals = fetchData("goals") as Goal[];
-  const filteredGoals = goals.filter((d) => d.id !== goal_id);
-
-  localStorage.setItem("goals", JSON.stringify(filteredGoals));
-  return deleteItem("goals", "id", goal_id);
-};
-
-// Delete User Data
-export const deleteUserData = () => {
-  localStorage.removeItem("transactions");
-  localStorage.removeItem("assets");
-  localStorage.removeItem("categories");
-};
-
-/* -------------- Asset and Category -------------- */
-
-// Calculate Spent By Category
 export const spentByCategory = (
   category: Category,
   currencyRates: DataItem,
